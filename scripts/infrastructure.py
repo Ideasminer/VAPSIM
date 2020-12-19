@@ -17,3 +17,9 @@ class Area(Stack):
         super(Area, self).__init__()
     def __repr__(self):
         pass
+
+class Lot():
+    def __init__(self):
+        pass
+    def __repr__(self):
+        pass

@@ -11,3 +11,9 @@ class Stack(Spot):
         super(Stack, self).__init__()
     def __repr__(self):
         pass
+
+class Area(Stack):
+    def __init__(self, *args):
+        super(Area, self).__init__()
+    def __repr__(self):
+        pass

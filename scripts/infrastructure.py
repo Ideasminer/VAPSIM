@@ -19,6 +19,7 @@ class Spot():
                     self.occupy = args[2]
                     self.size = (3.0, 5.0)
                 if len(args) == 4:
+                    self.occupy = args[2]
                     self.size = args[3]
             self.border = self.get_border(self.size)
         else:
@@ -127,7 +128,6 @@ class Area(Stack):
         # use containerList to present the list of stacks
         # use direction to represent : the name rank (from top - bottom or from bottom to top)(1: +y, 0:-y), re-write auto-generate function
         # use stack_direction to represent the stacks' direction
-        super(Area, self).__init__(*args, **kwargs)
         if "baseNum" in kwargs.keys():
             self.baseNum = kwargs.get("baseNum")
         else:
@@ -136,6 +136,7 @@ class Area(Stack):
             self.stack_direction = kwargs.get("stack_direction")
         else:
             self.stack_direction = 1
+        super(Area, self).__init__(*args, **kwargs)
         self.border = self.get_border((self.size[0] * self.containerNum, self.size[1] * self.baseNum))
         self.containerList = self.auto_generate()
         self.occupy = sum([i.occupy for i in self.containerList])
@@ -193,7 +194,7 @@ class Lot():
                 self.parking, self.corridor, self.outway = args
         else:
             raise ValueError("All params are required: parking matrix, corridor matrix and in-out lane number")
-        self.occupy = [[0 for j in range(i[0])] for i in range(len(self.parking))]
+        self.occupy = [[0 for j in range(self.parking[i][0])] for i in range(len(self.parking))]
 
     def area_generate(self, spot_size, corridor_width, area_direction):
         # initial areaList
@@ -227,7 +228,7 @@ class Lot():
     def assign_demand(self, assign_matrix, areaList):
         self.occupy = assign_matrix
         for i in range(len(self.occupy)):   # Area i
-            for j in range(len(i)):         # Stack j in Area i
+            for j in range(len(self.occupy[i])):         # Stack j in Area i
                 stack_occupy = assign_matrix[i][j]
                 spotList = areaList[i].containerList[j].containerList
                 if stack_occupy > len(spotList):

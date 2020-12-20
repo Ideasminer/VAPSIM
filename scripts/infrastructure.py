@@ -35,6 +35,9 @@ class Spot():
         lt = (x - length / 2, y + width / 2)
         return [rt, rb, lb, lt] # rt: right-top, rb: right-bottom, lb: left-bottom, lt: left-top
 
+    def updateOccupy(self, status):
+        self.occupy = status
+
     def __repr__(self):
         return str(self.name)
 
@@ -107,10 +110,13 @@ class Stack(Spot):
             containerList.append(newContainer)
         return containerList
 
+    def updateOccupy(self):
+        self.occupy = sum([i.occupy for i in self.containerList])
+
     def __repr__(self):
         return str({
             "name" : self.name,
-            "spotNum": self.containerList,
+            "containerNum": self.containerNum,
             "direction": self.direction
         })
 
@@ -166,8 +172,9 @@ class Area(Stack):
 
 class Lot():
     def __init__(self, *args):
-        # args[0] : parking matrix, [[[k] * j] * i], dimension: 3, shape:(i, j, k) 
+        # args[0] : parking matrix, dimension: 2, shape:(i, 2) 
             # i refers to the number of parking areas in the lot
+            # 2 refers to (j,k)
             # j refers to the number of stacks in the area
             # k refers to the number of spots in the stack
         # args[1] : corridor matrix, dimensions: 2, shape(i - 1, 2)
@@ -175,8 +182,57 @@ class Lot():
             # 2 refers to the Ei and Gi, Ei is the number of lanes for clear-way, Gi is the number of lanes for temp parking way
         # args[2] : in-out param, dimension: 1, number of lanes
         # all params are required
+        # auto generate param: occupy
+            # occupy : matrix, dimension : 2, shape: (i, j), like [[k1, k2, k3, k4], [k1, k2, k3, k4]]
+            # refers to the the number of parking spot occupied
+            # initialize with 0
         if args:
             if len(args) != 3:
                 raise ValueError("All params are required: parking matrix, corridor matrix and in-out lane number")
             else:
                 self.parking, self.corridor, self.outway = args
+        else:
+            raise ValueError("All params are required: parking matrix, corridor matrix and in-out lane number")
+        self.occupy = [[0 for j in range(i[0])] for i in range(len(self.parking))]
+
+    def area_generate(self, spot_size, corridor_width, area_direction):
+        # initial areaList
+        areaList = []
+        area_num = len(self.parking)
+        parking = self.parking
+        for i in range(area_num):
+            stack_num = parking[i][0]
+            spot_num = parking[i][1]
+            name = i
+            area_direction = area_direction
+            stack_direction = (i + 1) % 2
+            if i == 0:
+                x = spot_num / 2 * spot_size[1]
+                y = stack_num / 2 * spot_size[0]
+                centriod = (x, y)
+            else:
+                start_x = parking[i - 1][1] * spot_size[0] + sum(self.corridor[i - 1]) * corridor_width
+                x = spot_num / 2 * spot_size[1] + start_x
+                y = stack_num / 2 * spot_size[0]
+                centriod = (x, y)
+            occupy = 0
+            newArea = Area(name, centriod, occupy, spot_size, baseNum = spot_num, containerNum = stack_num, direction = area_direction, stack_direction = stack_direction)
+            areaList.append(newArea)
+        return areaList
+
+    def updateLot(self, parking, corridor, outway):
+        # update facility's decision params
+        self.parking, self.corridor, self.outway = parking, corridor, outway
+
+    def assign_demand(self, assign_matrix, areaList):
+        self.occupy = assign_matrix
+        for i in range(len(self.occupy)):   # Area i
+            for j in range(len(i)):         # Stack j in Area i
+                stack_occupy = assign_matrix[i][j]
+                spotList = areaList[i].containerList[j].containerList
+                if stack_occupy > len(spotList):
+                    raise ValueError("Wrong assign matrix, value larger than capacity")
+                [k_null.updateOccupy(0) for k_null in spotList[:(len(spotList) - stack_occupy)]]
+                [k_occu.updateOccupy(1) for k_occu in spotList[(len(spotList) - stack_occupy): ]]
+                areaList[i].containerList[j].updateOccupy()
+            areaList[i].updateOccupy()
